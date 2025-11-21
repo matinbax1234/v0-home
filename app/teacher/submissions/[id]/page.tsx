@@ -1,11 +1,11 @@
-'use client'
+"use client"
 
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { ArrowLeft, Download, User, Calendar } from 'lucide-react'
-import Link from 'next/link'
-import { useParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { ArrowLeft, Download, User, Calendar, Eye } from "lucide-react"
+import Link from "next/link"
+import { useParams } from "next/navigation"
+import { useState, useEffect } from "react"
 
 interface Homework {
   id: string
@@ -30,32 +30,39 @@ export default function ViewSubmissions() {
 
   const [homework, setHomework] = useState<Homework | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    const storedHomeworks = localStorage.getItem('homeworks')
+    const storedHomeworks = localStorage.getItem("homeworks")
     if (storedHomeworks) {
       const homeworks = JSON.parse(storedHomeworks)
       const found = homeworks.find((hw: Homework) => hw.id === homeworkId)
       setHomework(found || null)
     }
 
-    const storedSubmissions = localStorage.getItem('submissions')
+    const storedSubmissions = localStorage.getItem("submissions")
     if (storedSubmissions) {
       const allSubmissions = JSON.parse(storedSubmissions)
-      const filtered = allSubmissions.filter(
-        (sub: Submission) => sub.homeworkId === homeworkId
-      )
+      const filtered = allSubmissions.filter((sub: Submission) => sub.homeworkId === homeworkId)
       setSubmissions(filtered)
     }
   }, [homeworkId])
 
   const handleDownload = (submission: Submission) => {
-    const link = document.createElement('a')
+    const link = document.createElement("a")
     link.href = submission.fileData
     link.download = `${submission.studentName}_${submission.studentFamily}_${submission.fileName}`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handlePreview = (submission: Submission) => {
+    setPreviewUrl(submission.fileData)
+  }
+
+  const closePreview = () => {
+    setPreviewUrl(null)
   }
 
   if (!homework) {
@@ -90,24 +97,21 @@ export default function ViewSubmissions() {
             <h2 className="text-xl font-bold">{homework.title}</h2>
             <p className="text-muted-foreground">{homework.description}</p>
             <p className="text-sm text-muted-foreground">
-              مهلت ارسال: {new Date(homework.deadline).toLocaleDateString('fa-IR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+              مهلت ارسال:{" "}
+              {new Date(homework.deadline).toLocaleDateString("fa-IR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </p>
-            <p className="text-sm font-medium mt-2">
-              تعداد جواب‌های دریافت شده: {submissions.length}
-            </p>
+            <p className="text-sm font-medium mt-2">تعداد جواب‌های دریافت شده: {submissions.length}</p>
           </div>
 
           {submissions.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">
-                هنوز جوابی ارسال نشده است
-              </p>
+              <p className="text-muted-foreground text-lg">هنوز جوابی ارسال نشده است</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -126,12 +130,13 @@ export default function ViewSubmissions() {
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
                             <span>
-                              زمان ارسال: {new Date(submission.submittedAt).toLocaleDateString('fa-IR', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
+                              زمان ارسال:{" "}
+                              {new Date(submission.submittedAt).toLocaleDateString("fa-IR", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
                               })}
                             </span>
                           </div>
@@ -139,10 +144,16 @@ export default function ViewSubmissions() {
                         </div>
                       </div>
                     </div>
-                    <Button onClick={() => handleDownload(submission)} size="lg">
-                      <Download className="w-4 h-4 ml-2" />
-                      دانلود PDF
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button onClick={() => handlePreview(submission)} variant="outline" size="lg">
+                        <Eye className="w-4 h-4 ml-2" />
+                        پیش‌نمایش
+                      </Button>
+                      <Button onClick={() => handleDownload(submission)} size="lg">
+                        <Download className="w-4 h-4 ml-2" />
+                        دانلود PDF
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -150,6 +161,22 @@ export default function ViewSubmissions() {
           )}
         </Card>
       </div>
+
+      {previewUrl && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={closePreview}>
+          <div
+            className="w-full max-w-6xl h-[90vh] bg-white rounded-lg overflow-hidden relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <Button onClick={closePreview} variant="secondary">
+                بستن
+              </Button>
+            </div>
+            <iframe src={previewUrl} className="w-full h-full" title="PDF Preview" />
+          </div>
+        </div>
+      )}
     </main>
   )
 }

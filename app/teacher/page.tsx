@@ -1,12 +1,12 @@
-'use client'
+"use client"
 
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { ArrowLeft, LogOut, KeyRound } from 'lucide-react'
-import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { formatJalali } from '@/lib/jalali'
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { ArrowLeft, LogOut, KeyRound, Trash2 } from "lucide-react"
+import Link from "next/link"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { formatJalali } from "@/lib/jalali"
 
 interface Homework {
   id: string
@@ -21,30 +21,54 @@ export default function TeacherDashboard() {
   const [homeworks, setHomeworks] = useState<Homework[]>([])
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('teacherLoggedIn')
+    const isLoggedIn = localStorage.getItem("teacherLoggedIn")
     if (!isLoggedIn) {
-      router.push('/login')
+      router.push("/login")
       return
     }
 
-    const stored = localStorage.getItem('homeworks')
+    const stored = localStorage.getItem("homeworks")
     if (stored) {
       setHomeworks(JSON.parse(stored))
     }
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem('teacherLoggedIn')
-    router.push('/')
+    localStorage.removeItem("teacherLoggedIn")
+    router.push("/")
   }
 
   const handleChangePassword = () => {
-    router.push('/teacher/change-password')
+    router.push("/teacher/change-password")
+  }
+
+  const handleDelete = (homeworkId: string) => {
+    if (confirm("آیا مطمئن هستید که می‌خواهید این تکلیف را حذف کنید?")) {
+      const updatedHomeworks = homeworks.filter((hw) => hw.id !== homeworkId)
+      setHomeworks(updatedHomeworks)
+      localStorage.setItem("homeworks", JSON.stringify(updatedHomeworks))
+
+      // Also delete related submissions
+      const storedSubmissions = localStorage.getItem("submissions")
+      if (storedSubmissions) {
+        const allSubmissions = JSON.parse(storedSubmissions)
+        const filteredSubmissions = allSubmissions.filter((sub: any) => sub.homeworkId !== homeworkId)
+        localStorage.setItem("submissions", JSON.stringify(filteredSubmissions))
+      }
+    }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-8 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
+        <img
+          src="/abstract-geometric-pattern-with-books-and-code-sym.jpg"
+          alt=""
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      <div className="max-w-6xl mx-auto space-y-6 relative z-10">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -72,14 +96,12 @@ export default function TeacherDashboard() {
         <div className="grid gap-4">
           {homeworks.length === 0 ? (
             <Card className="p-12 text-center">
-              <p className="text-muted-foreground text-lg">
-                هنوز تکلیفی ایجاد نشده است
-              </p>
+              <p className="text-muted-foreground text-lg">هنوز تکلیفی ایجاد نشده است</p>
             </Card>
           ) : (
             homeworks.map((homework) => (
               <Card key={homework.id} className="p-6">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2 flex-1">
                     <h3 className="text-xl font-bold">{homework.title}</h3>
                     <p className="text-muted-foreground">{homework.description}</p>
@@ -87,9 +109,14 @@ export default function TeacherDashboard() {
                       مهلت ارسال: {formatJalali(new Date(homework.deadline), true)}
                     </p>
                   </div>
-                  <Link href={`/teacher/submissions/${homework.id}`}>
-                    <Button>مشاهده جواب‌ها</Button>
-                  </Link>
+                  <div className="flex gap-2">
+                    <Link href={`/teacher/submissions/${homework.id}`}>
+                      <Button>مشاهده جواب‌ها</Button>
+                    </Link>
+                    <Button variant="destructive" size="icon" onClick={() => handleDelete(homework.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))
